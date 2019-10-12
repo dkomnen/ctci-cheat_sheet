@@ -86,3 +86,70 @@ def BFS(root: Node):
 Bidirectional search is used to find the shortest path between a source and destination
 node. It operates by essentially running two simultaneous breadth-first searches, one
 from each node. When their searches collide, we have found a path.
+
+## Object-Oriented Design
+### How to Aproach
+#### 1. Handle ambiguity
+OOD questions are often intentionally vague in order to test whether you'll make assumptions
+or if you'll ask clarifying questions.
+
+When being asked an OOD question, you should inquire who is going to use it and how they are
+going to use it. Depending on the question, you might even want to go through the 'six W': who,
+what, where, when, how, why
+
+#### 2. Define the core objects
+Consider what the core objects are going to be in the given scenario, and define them.
+
+#### 3. Analyze relationships
+Think about the relationships between the defined objects. Do they inherit one another?
+Are they many-to-many or one-to-many? Ask clarifying questions from your interviewer.
+
+#### 4. Investigate actions
+At this point you should have a basic outline of your OOD. What remains is to define the actions
+the objects will take and how they relate to each other. You may find that you have forgotten
+some objects, and need to update your design.
+
+### Design patterns
+The singleton and factory design pattern are widely used in interviews.
+
+## Recursion and Dynamic Programming
+
+### How to Aproach
+Recursive solutions, by defition, are built off of solutions to subproblems.
+
+There are many ways to divide a problem into subproblems. Three of the most common approaches
+to develop an algorithm are bottom-up, top-down, and half-half.
+
+#### Bottom-up approach
+The bottom-up approach is the most intuitive. We start with knowing how to solve the problem for a simple
+case, like a list with only one element. Then we figure out how to solve for two elements, then three
+and so on. The key here is to think about how you can build the solution for one case off of the previous
+case (or multiple previous cases).
+
+#### Top-down approach
+The top down approach can be more complex, since it's less concrete. But sometimes, it's the best way
+to think about the problem.
+
+In these problems, we think about how we can divide the problem for case N into subproblems.
+
+#### Half-half approach
+It's often effective to divide the data set in half.
+
+For example, binary search works with a 'half-half' approach. When we look for an element in a sorted
+array, we first figure out which half of the array contains the value. Then we recurse and search for
+it in that half.
+
+Merge sort tis also a 'half-half' approach. We sort each half of the array and then merge together the
+sorted halves.
+
+### Recursive vs Iterative solutions
+Recursive algorithms can be very space inefficient. If your algorithm recurses to a depth of n, it
+uses at least O(n) memory.
+
+Before diving into recursive code, ask yourself how hard it would be to implement it iteratively,
+and discuss the tradeoffs with your interviewer.
+
+### Dynamic Programming
+Dynamic programming is mostly just a matter of taking a recursive algorithm, and finding the
+overlapping subproblems(that is, repeated calls). You then cache those results for future
+recursive calls.
