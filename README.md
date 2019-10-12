@@ -30,11 +30,27 @@ a cache.
 
 ## Trees
 Be comfortable in implementing in-order, post-order and pre-order traversal.
+
 In-order traversal means to "visit" the left branch, then the current node, and finally,
 the right branch.
 Pre-order traversal visits the current node before it's children.
 Post-order traversal visits the current node after it's children. In post-order traversal
 the root is always the last node visited.
+
+### Types of Trees
+#### Binary Tree
+Any Tree in which each node has up to two children.
+#### Binary Search Tree
+A binary search tree is a binary tree which imposes the condition that, for each node,
+its left descendents are less than or equal to the current node, which is less than the right
+descendents.
+#### Complete Binary Tree
+Complete binary tree has every level of the tree fully filled, except maybe the last level.
+To that extend that the last level is filled, it's filled left to right.
+#### Full Binary Tree
+A full binary tree is a binary tree in which every node has either zero or two children.
+#### Perfect Binary Tree
+Perfect binary trees are both full and complete.
 
 ### Trie (Prefix Tree)
 A trie is a variant of an n-ary tree in which characters are stored at each node. Each
