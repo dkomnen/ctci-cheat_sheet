@@ -153,3 +153,238 @@ and discuss the tradeoffs with your interviewer.
 Dynamic programming is mostly just a matter of taking a recursive algorithm, and finding the
 overlapping subproblems(that is, repeated calls). You then cache those results for future
 recursive calls.
+
+## System Design and Scalability
+
+### Handling the questions
+
+#### Communicate
+A key goal of system design questions is to evaluate your ability to communicate.
+Stay engaged with the interviewer. Ask them questions. Be open about the issues of your system.
+
+#### Go broad first
+Don't dive straight into the algorithm part of get excessively focussed on one part.
+
+#### Use the whiteboard
+Using a whiteboard helps your interviewer follow your proposed design. Get up to the whiteboard
+in the very beginning and use it to draw a picture of what you're proposing.
+
+#### Acknowledge interviewer concerns
+Your interviewer will likely jump in with concerns. Don't brush them off; validate them.
+Acknowledge the issues your interviewer points out and make changes accordingly.
+
+#### Be careful about assumptions
+An incorrect assumption can dramatically change the problem. For example, if your system
+produces analytics / statistics for a dataset, it matters whether those analytics must be totally
+up to date.
+
+#### State your assumptions explicitly
+When you do make assumptions, state them. This allows your interviewer to correct you if you're
+mistaken, and shows that you at least know what assumptions you're making.
+
+#### Estimate when necessary
+In many cases, you might not have the data you need. For example, if you're designing a web crawler,
+you might need to estimate how much space it will take to store all the urls. You can estimate this with
+other data you know.
+
+#### Drive
+As the candidate, you should stay in the driver's seat. This doesn't mean you don't talk to your interviewer;
+In fact, you must talk to your interviewer. However, you should be driving through the question. Ask questions.
+Be open about tradeoffs. Continue to go deeper. Continue to make improvements.
+
+These questions are largely about the process rather than the ultimate design.
+
+### Design step by step
+
+#### Step 1: Scope the problem
+You can't design a system if you don't know what you're designing. Scoping the problem is important
+because you want to ensure that you're building what the interviewer wants and because this might be
+something that interviewer is specifically evaluating.
+
+If you're asked something such as "Design TinyURL" you'll want to understand what exactly you need to
+implement. Will people be able to specify their own short URLs? Or will it all be auto-generated? Will
+you need to keep track of any stats on the clicks? Should the URLs stay alive forever, or do they have a timeout.
+
+#### Step 2: Make reasonable assumptions
+It's okay to make some assumptions when necessary, but they must be reasonable. It is not reasonable to assume that your system only needs to process 100 users per day, or to assume that
+you have infinite memory available.
+
+However it might be reasonable to design for a max of one million new URLs per day. Making this assumption can
+help you calculate how much data your system might need to store.
+
+Some assumptions might make some "product sense" (which is not a bad thing). For example, is it okay for
+the data to be stale by a max of ten minutes? That all depends. If it takes 10 minutes for a just-entered URL
+to work, that's a deal-breaking issue. People usually want these URLs to be active immediately. However, if
+statistics are ten minutes out of date, that might be okay. Talk to your interviewer about these sorts of assumptions.
+
+#### Step 3: Draw the Major Components
+Draw a diagram of the major components. You might have something like a frontend server(or set of servers) that pull data from the backend's data store. You might have another set of servers that crawl the internet for some data, and another set that process analytics. Draw a picture of what this system might look like.
+
+#### Step 4: Identify the Key issues
+Once you have a basic design in mind, focus on the key issues. What will be the bottlenecks or major challenges in the system?
+
+For example, if you were designing TinyURL, one situation you might consider is that while some URLs will be infrequently accessed, others can suddenly peak. This might happen if a URL is posted on Reddit or another popular forum. You don't necessarily want to constantly hit the database.
+
+#### Step 5: Redesign for the key issues
+Once you have identified the key issues, it's time to adjust your design for it. You might find that it involves a major redesign or just some minor tweaking (like using a cache).
+
+Stay up at the whiteboard here and update your diagram as your design changes.
+
+Be open about any limitations in your design. Your interviewer will likely be aware of them, so it's important to communicate that you're aware of them, too.
+
+### Algorithms that scale: Step by Step
+Sometimes you're not asked to design a whole system, but just an algorithm or feature.
+
+#### Step 1: Ask questions
+Ask questions to really understand the problem. The interviewer might have left out information(intentionally or unintentionally).
+
+#### Step 2: Make Believe
+Pretend the data can all fit on one machine without limitations, how would you solve it in that case?
+
+#### Step 3: Get Real
+Go back to the original problem. How much data can fit on one machine, and what problems will appear when you split the data? Common problems are how to divide the data and how one machine would identify where to look up a different piece of data?
+
+#### Step 4: Solve problems
+Think about how to solve the issues you identified in step 2. Sometimes a solution can be to remove the issue completely.
+
+## Sorting and Searching
+
+### Common sorting Algorithms
+
+#### Bubble sort | Runtime: O(n2) average and worst case. Space: O(1)
+
+#### Selection sort | Runtime: O(n2) average and worst case. Space: O(1)
+
+#### Merge Sort | Runtime: O(n log(n)) average and worst case. Space: depends
+
+#### Quick sort | Runtime: O(n log(n)) average, O(n2) worst case. Space: O(log(n))
+
+#### Radix Sort | Runtime: O(kn)
+
+### Searching algorithms
+
+#### Binary search | RuntimeL O(log (n)) average and worst
+
+# System Design Cheat sheet
+
+## Twitter
+We care about eventual consistency - Availability before consistency.
+
+Tradeoffs Time vs Space.
+Twitter is very read-heavy. The data that is being read is usually just text tweets, and a minority of video or image tweets. The text tweets don't take up a lot of memory, only 140 characters so we can really store most of it in memory to optimize for time in this case.
+
+### Core Features
+- Tweets
+- Timeline
+  - User(users timeline)
+  - Home(time of all people user follows)
+- Following
+
+### Solution
+#### Tweeting
+When tweeting - you will post your tweet and it will hit a load balancer, which will pass the tweet data to a redis instance so it can be saved in memory - and this data is replicated on 3 redis instances for availability. The redis machines have to be very large memory-wise. The user home timeline is stored and updated in the redis db, and it can be optimized by not storing the home timelines in redis for users who haven't been active for a longer period of time.
+
+An edge case for tweeting will be users with many followers, let's say 1M+. When they tweet, we have to write 3M+ times to redis lists, which is a large computational load. In order to optimize this, we can use a mix of in-memory and async calls. We could save tweets from users with large ammount of followers into an RDMBS, and they can be merged at page load with redis lists for full home timeline.
+
+We get the followers redis lists from an SQL db listing all followers
+
+#### Timeline
+Bob accesses his timeline with a get method. The request hits a load balancer, and the load balancer will direct us to the least occupied redis instance where Bob's timeline list is saved. We only hit one redis instance.
+
+#### Redis
+We have to know which 3 redis instances the load balancer should redirect us. We will do this with hash maps, a hash lookup using the user_id of bob.
+
+## Messaging service (Whatsapp, WeChat)
+Ask about features first. What devices should it be on, is it video also, audio, or just text? Is it one to one or group chats? We aren't storing permanent chat data on servers.
+
+### Core features
+- One on One chat: Text only
+- Sent/Delivered/Read
+- Push notifications
+
+### Solution
+#### Chat
+Let's say we have two people chatting, Bob and Alice. When they send messages, they have to go through our servers and that will be our bottleneck. We want to horizontally scale the servers, and use async in the solution as it doesn't matter for all parties to be updated at the same time.
+Our servers have queues for message sending, with a queue being assigned per chat where messages are stored.
+An issue that can happen is that our messages are stored in multiple servers and queues due to availability or some other issue, where we can lose the order of messages so when they are received, it is in the wrong order.
+
+#### Send/Delivered/Read
+Handled by TCP on servers. If our message is sent to the server, we will know with ACK. When the message is received on device, server knows with ACK and can return back to sender. When the message is read, we can push it as a "message" to server queue and notify the sender.
+
+#### Push notifications
+They are different from text messages. They have to be delivered to user when he is online, but we do not expect interaction with it. It's probably best to use the push notification delivery system is used from the phone OS, e.g. Google push notifications.
+It's a fire and forget system. If we get ACK that the push notification was received, we can delete all data related to it from our servers.
+
+## Bitly/TinyURL
+
+### Assumptions
+30M users/month
+1M users/day
+7 characters length of shortened url
+
+#### Data capacity model
+long_url -> 2kb(2048 chars)
+short_url -> 17bytes(17chars)
+created_at -> 7bytes(7chars)
+exp-at -> 7bytes(7chars)
+~2.03kb per url
+30M users/month -> 60.7GB/Month -> 0.7 TB/year -> 3.6TB/5 years
+
+### API
+create_tiny(long_url) -> short_url
+get_long(short_url) -> long_url
+
+### Core functionalities
+- hashing the url
+
+### Solution
+#### Hashing the url
+We have several options for hashing, with most common being MD5 and Base62. Base62 gives us 3.5 trillion options at 7 characters length. Running our system with 1000/s writes, it would take us over 100 years to run out of unique id's. We want to prevent data corruption by the chance of getting the same short_url hash, so we have a couple of options. We can either query the database to check if the short_url is already present, and to prevent insert in that case. This is costly, and does not work with a scalable system with multiple instances.
+Another option is to use a database level function, like only insert if not present, and like that guarantee we won't have corrupted data. But these kind of functions are only available in RDBMS.
+
+So this solution would not work and be scalable. An option that we can do is add a counter to every request that will be received, and we can hash the counter every time.
+An issue here can be on scalable multiple instance systems, we would need to have a counter service to keep track of the counter on multiple instances. This way we are introducing a single point of failure, that can create difficulties for us.
+We can solve this problem using zookeeper, a coordination service. We can store slices of the range of our counter in zookeeper, so whenever a service comes online, it can ask zookeeper for a range of counter, and we can assign it one of the available ones.
+
+This way we can insert into the DB without worry of collision. Also on input of url, we should also add it to the cache immediately, so when the user requests the long url back, our servers can take it from the cache instead of the DB.
+
+#### Database
+We can use a RDBMS but we run into an issue with horizontal scaling using sharding there as we might have to use consistent hashing and it's going to increase our complexity.
+Because we are going to have a lot of users per month, and it's hard to scale RDBMS horizontally, we can look into NoSQL solutions. But the issue there is with eventual consistency, it will take some time for data to replicate to a different node. The good thing is that it's highly available and easier to scale.
+
+## Uber/Lyft/Ola
+A taxi booking service like uber has a supply and demand system of users and drivers. This system is based on maps and location data. Uber uses the google S2 library for this, which splits the world into cells of a certain size, and each cell is given a unique id.
+So we can spread this data in a distributed system, and with the id and consistent hashing, we can know on which server is the data stored.
+
+We will be using web sockets for asynchronous connections with cabs and users.
+
+### Assumptions
+
+### Core functionalities
+- Supply and Demand (user and driver matching)
+- Driver GPS tracking
+- Find nearest cab - Dispatch optimisation
+
+### Solution
+
+#### Driver GPS tracking
+Cabs will be sending geo data every 4 seconds to a Kafka REST API
+
+#### Dispatch optimisation
+The dispatch optimisation is built in a node.js for event driven and asynchronous programming. Uber uses consistent hashing for distributing workload between workers.
+We have a supply and demand service in dispatch optimisation which is is sending requests to the workers who are calculating the cells(S2 geo) near the user who called the cab. It calculates who are the cabs near the user and then the worker sends the data back to the SnD service, who returns the data to the cabs with web sockets.
+
+# Time and space complexities and common python operations
+
+## Time complexities
+O(1) - Constant Time
+O(log n) - Logarithmic time
+O(n) - Linear time
+O(n log n) - Quasilinear time
+O(n^2) - Quadratic time
+O(2^n) - Exponential time
+O(n!) - Factorial time
+
+## Common Data Structure Operations
+Taken from https://www.bigocheatsheet.com
+![Screenshot](st_complexities.png)
