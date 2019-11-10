@@ -329,6 +329,45 @@ For constitent hashing, we create a ring "array" of values from 0 to M-1. We the
 
 The benefit of this architecture is that if one of our servers dies, the requests it was handling will be sent to the next server in the ring. This would not be possible with just assigning a certain hash modulo to a certain server.
 
+### Availability vs Consistency(CAP theorem)
+In a distributed computer system, you can only support two of the following guarantees:
+- Consistency - Every read receives the most recent write or an error
+- Availability - Every request receives a response, without guarantee that it contains the most recent version of the information
+- Partition Tolerance - The system continues to operate despite arbitrary partitioning due to network failures
+Networks aren't reliable, so you'll need to support partition tolerance. You'll need to make a software tradeoff between consistency and availability.
+
+#### CP - consistency and partition tolerance
+
+Waiting for a response from the partitioned node might result in a timeout error.  CP is a good choice if your business needs require atomic reads and writes.
+
+#### AP - availability and partition tolerance
+
+Responses return the most recent version of the data available on a node, which might not be the latest.  Writes might take some time to propagate when the partition is resolved.
+
+AP is a good choice if the business needs allow for or when the system needs to continue working despite external errors.
+
+### Consistency patterns
+
+With multiple copies of the same data, we are faced with options on how to synchronize them so clients have a consistent view of the data.
+
+#### Weak consistency
+
+After a write, reads may or may not see it.  A best effort approach is taken.
+
+This approach is seen in systems such as memcached.  Weak consistency works well in real time use cases such as VoIP, video chat, and realtime multiplayer games.  For example, if you are on a phone call and lose reception for a few seconds, when you regain connection you do not hear what was spoken during connection loss.
+
+#### Eventual consistency
+
+After a write, reads will eventually see it (typically within milliseconds).  Data is replicated asynchronously.
+
+This approach is seen in systems such as DNS and email.  Eventual consistency works well in highly available systems.
+
+#### Strong consistency
+
+After a write, reads will see it.  Data is replicated synchronously.
+
+This approach is seen in file systems and RDBMSes.  Strong consistency works well in systems that need transactions.
+
 ## Twitter
 We care about eventual consistency - Availability before consistency.
 
@@ -435,6 +474,37 @@ Cabs will be sending geo data every 4 seconds to a Kafka REST API
 #### Dispatch optimisation
 The dispatch optimisation is built in a node.js for event driven and asynchronous programming. Uber uses consistent hashing for distributing workload between workers.
 We have a supply and demand service in dispatch optimisation which is is sending requests to the workers who are calculating the cells(S2 geo) near the user who called the cab. It calculates who are the cabs near the user and then the worker sends the data back to the SnD service, who returns the data to the cabs with web sockets.
+
+## Redis - Distributed cache system design
+
+### Assumptions/Requirements
+- We want to store terabytes of data, as we are trying to build a very large cache
+- Expecting 50k to 1M OPS
+- ~1ms latency
+- Eviction policy LRU
+- 100% availability of servers
+- Scalable
+
+### Core features
+- Write Through - this means that data will be saved to the cache, then to the db and only if both are successfull will it return an ACK
+- Write Around - Just write to db, data will be sent to cache only on read miss in cache
+- Write Back - Data will be saved to the cache, who responds with ACK back, and then a sync service will save data from cash to db
+
+### Solution
+The data structure we are going to use for our distributed cache is a hash table. The issue with hash tables is that we can get collisions on key hashing and we can solve this with a couple of different approaches.
+- Linked list approach is if we find a collision we save the keys and values in a linked list, so when we lookup the value we will have the data in the linked list
+- Open addressing
+- Robin hood hashing
+Another issue is that cache memory is really expensive, so we scale it indefinitely. To solve this issue we have to build our cache eviction policy, and for this we can use LRU, which is one of the best options for a cache.
+
+For the cache internals implementation we have different options. We need to enable the CRUD operations. The best option for implementing internals is an event driven logic, with an event queue and an indefinitely running event loop which sends the requests to the thread pool who have a callback function to send a response once they are done with their memory operation.
+
+In order to have our cache persistence, in case of  a server failure, we can use 2 options:
+- Regular interval snapshot - dump the cache and save it to a dump file from which we can rebuild data later
+- Log reconstruction - Keep a log file of all operations being done on memory, so in case of cache fail, we can rebuild the cache from the log file
+
+As far as availability, we can try having servers with replicated data, but this adds extra latency and the servers need some time to sync up so we might not have the correct data all the time.
+We can make the replica servers slaves of master servers, so we won't be distributing requests and will avoid most of the issues like this.
 
 # Time and space complexities and common python operations
 
